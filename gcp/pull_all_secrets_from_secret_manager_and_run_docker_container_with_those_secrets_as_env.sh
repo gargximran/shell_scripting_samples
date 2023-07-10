@@ -8,16 +8,22 @@ if [ $2 -eq 0 ]; then
     echo "No value provided For command . EX: \"./script.sh nginx:latest some_command\". Continueing without command. It will use Dockerfile default"
 fi
 
-$IMAGE_NAME=$1
-$COMMAND=$2
+$pre_command=$1
+$IMAGE_NAME=$2
+$COMMAND=$3
 
 echo "Getting all Secrets Name from GCP secret manager"
 gcloud secrets list > all_secrets.txt
 
 
-DEST="docker run "
-
+DEST="docker run $pre_command "
+index=0
 while read -r line; do
+    index=$((index+1))
+    if [ $index -eq 1 ]
+    then
+            continue
+    fi
     first_field=$(echo "$line" | cut -d ' ' -f 1)
     echo "Pulling Secret for $first_field"
     secret_value="$(gcloud secrets versions access latest --secret $first_field)"
@@ -43,8 +49,13 @@ done < ./all_secrets.txt
 
 DEST="$DEST $IMAGE_NAME $COMMAND"
 
-echo $DEST > docker.sh
 
-echo "Starting container with all secrets..."
-sh -c "$DEST"
-echo "Continer is running"
+
+
+
+
+
+
+
+
+
