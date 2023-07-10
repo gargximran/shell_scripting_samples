@@ -6,14 +6,13 @@ fi
 
 
 
-$IMAGE_NAME=$1
-$PURPOSE=$2
+IMAGE_NAME="$1"
+PURPOSE="$2"
+echo $IMAGE_NAME
+echo $PURPOSE
 
-
-
-if [ "$PURPOSE" != "migration" ] || [ "$PURPOSE" != "worker" ];
-then
-    echo "Error: purpose not found as expected;"
+if [ "$PURPOSE" != "migration" ] && [ "$PURPOSE" != "worker" ]; then
+    echo "Error: purpose not found as expected."
     exit 1
 fi
 
@@ -21,7 +20,7 @@ echo "Getting all Secrets Name from GCP secret manager"
 gcloud secrets list > all_secrets.txt
 
 
-DEST="docker run "
+DEST=" "
 index=0
 while read -r line; do
     index=$((index+1))
@@ -54,24 +53,19 @@ done < ./all_secrets.txt
 
 if [ "$PURPOSE" = "migration" ]
 then
-    DEST="$DEST --rm $IMAGE_NAME python manage.py migrate"
-    sh -c $DEST
+    DEST="docker run --rm $DEST $IMAGE_NAME python manage.py migrate"
+    sh -c "$DEST"
 fi
 
 
 if [ "$PURPOSE" = "worker" ]
 then
-    docker system prune -af
-    DEST="$DEST --name=worker $IMAGE_NAME python manage.py qcluster"
-    sh -c $DEST
+    if [ -z "$(docker ps -q)" ]; then
+        docker system prune -af
+    else
+        docker stop $(docker ps -q)
+        docker system prune -af
+    fi
+    DEST="docker run --name=worker $DEST -d $IMAGE_NAME python manage.py qcluster"
+    sh -c "$DEST"
 fi
-
-
-
-
-
-
-
-
-
-
