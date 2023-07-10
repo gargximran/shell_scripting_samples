@@ -1,20 +1,17 @@
 #!/bin/bash
-if [ $1 -eq 0 ]; then
+if [ -z $1 ]; then
     echo "No value provided For image name. EX: \"./script.sh nginx:latest\"  Exiting.."
     exit 1
 fi
 
-if [ $2 -eq 0 ]; then
-    echo "No value provided For command . EX: \"./script.sh nginx:latest some_command\". Continueing without command. It will use Dockerfile default"
-fi
 
 
 $IMAGE_NAME=$1
-$COMMAND=$2
-$PURPOSE=$3
+$PURPOSE=$2
 
 
-if [ "$PURPOSE" != "migration" ] || [ "$PURPOSE != "worker"" ];
+
+if [ "$PURPOSE" != "migration" ] || [ "$PURPOSE" != "worker" ];
 then
     echo "Error: purpose not found as expected;"
     exit 1
@@ -55,8 +52,19 @@ while read -r line; do
     fi
 done < ./all_secrets.txt
 
-DEST="$DEST $IMAGE_NAME $COMMAND"
+if [ "$PURPOSE" = "migration" ]
+then
+    DEST="$DEST --rm $IMAGE_NAME python manage.py migrate"
+    sh -c $DEST
+fi
 
+
+if [ "$PURPOSE" = "worker" ]
+then
+    docker system prune -af
+    DEST="$DEST --name=worker $IMAGE_NAME python manage.py qcluster"
+    sh -c $DEST
+fi
 
 
 
