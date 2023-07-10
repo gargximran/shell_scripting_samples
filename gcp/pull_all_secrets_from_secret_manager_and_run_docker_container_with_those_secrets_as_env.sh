@@ -8,15 +8,23 @@ if [ $2 -eq 0 ]; then
     echo "No value provided For command . EX: \"./script.sh nginx:latest some_command\". Continueing without command. It will use Dockerfile default"
 fi
 
-$pre_command=$1
-$IMAGE_NAME=$2
-$COMMAND=$3
+
+$IMAGE_NAME=$1
+$COMMAND=$2
+$PURPOSE=$3
+
+
+if [ "$PURPOSE" != "migration" ] || [ "$PURPOSE != "worker"" ];
+then
+    echo "Error: purpose not found as expected;"
+    exit 1
+fi
 
 echo "Getting all Secrets Name from GCP secret manager"
 gcloud secrets list > all_secrets.txt
 
 
-DEST="docker run $pre_command "
+DEST="docker run "
 index=0
 while read -r line; do
     index=$((index+1))
